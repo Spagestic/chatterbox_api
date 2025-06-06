@@ -44,81 +44,86 @@ with gr.Blocks(css=custom_css, title="Chatterbox TTS API Demo") as demo:
         # 🗣️ Chatterbox TTS API Demo
         
         Generate high-quality speech from text using the Chatterbox TTS model deployed on Modal.
-        
-        **Features:**
-        - Convert text to speech with natural-sounding voices
-        - Voice cloning with reference audio samples
-        - Powered by Modal's serverless GPU infrastructure
-        """
+        """,
+        elem_id="main-title"
     )
     
-    # API Status Section
     with gr.Row():
-        with gr.Column():
+        with gr.Column(scale=1):
             api_status = gr.Textbox(
                 label="🔍 API Status",
                 value=check_api_health(),
                 interactive=False,
-                elem_classes=["status-box"]
+                elem_classes=["status-box"],
+                elem_id="api-status-box"
             )
-            refresh_status_btn = gr.Button("🔄 Refresh Status", size="sm")
+            refresh_status_btn = gr.Button("🔄 Refresh Status", size="sm", variant="secondary")
+    
+    gr.Markdown("---")
     
     with gr.Row():
-        with gr.Column():
+        with gr.Column(scale=2):
             gr.Markdown("### 📝 Input")
             text = gr.Textbox(
                 value="Hello! This is a test of the Chatterbox TTS system running on Modal.",
                 label="Text to synthesize",
                 placeholder="Enter the text you want to convert to speech (max 1000 characters)",
                 lines=4,
-                max_lines=8
+                max_lines=8,
+                elem_id="input-textbox"
             )
-            
             with gr.Row():
-                sample_btn = gr.Button("🎲 Random Sample", size="sm")
+                sample_btn = gr.Button("🎲 Random Sample", size="sm", variant="secondary")
                 char_count = gr.Textbox(
-                                    value="0/1000", 
+                    value="0/1000", 
                     label="Character Count", 
                     interactive=False,
-                    scale=0
+                    scale=0,
+                    elem_id="char-count-box"
                 )
-            
-            gr.Markdown("### 🎤 Voice Cloning (Optional)")
-            ref_wav = gr.Audio(
-                sources=["upload", "microphone"],
-                type="filepath",
-                label="Reference Audio File"
-            )
-            
-            gr.Markdown(
-                """
-                **Voice Cloning Tips:**
-                - Use clear, high-quality audio (5-30 seconds)
-                - Single speaker recordings work best
-                - Supported formats: WAV, MP3, MPEG
-                """
-            )
-            
-            generate_btn = gr.Button("🎵 Generate Speech", variant="primary", size="lg")
+            gr.Markdown("---")
+            with gr.Accordion("🎤 Voice Cloning (Optional)", open=False):
+                ref_wav = gr.Audio(
+                    sources=["upload", "microphone"],
+                    type="filepath",
+                    label="Reference Audio File"
+                )
+                gr.Markdown(
+                    """
+                    **Voice Cloning Tips:**
+                    - Use clear, high-quality audio (5-30 seconds)
+                    - Single speaker recordings work best
+                    - Supported formats: WAV, MP3, MPEG
+                    """
+                )
+            gr.Markdown("---")
+            generate_btn = gr.Button("🎵 Generate Speech", variant="primary", size="lg", elem_id="generate-btn")
 
-        with gr.Column():
+        with gr.Column(scale=1):
             gr.Markdown("### 🔊 Generated Audio")
             audio_output = gr.Audio(
                 label="Generated Speech",
-                interactive=False
+                interactive=False,
+                elem_id="audio-output-box"
             )
-            
-            gr.Markdown("### ℹ️ Instructions")
+            gr.Markdown("---")
             gr.Markdown(
                 """
-                1. **Enter Text**: Type or paste the text you want to convert to speech
-                2. **Optional Voice Cloning**: Upload a reference audio file to clone a specific voice
-                3. **Generate**: Click the generate button and wait for the audio to be created
+                ### ℹ️ Instructions
+                1. **Enter Text**: Type or paste the text you want to convert to speech  
+                2. **Optional Voice Cloning**: Upload a reference audio file to clone a specific voice  
+                3. **Generate**: Click the generate button and wait for the audio to be created  
                 4. **Play**: Use the audio player to listen to the generated speech
                 
                 **Note**: Generation may take 30+ seconds on cold start as the model loads.
                 """
             )
+    
+    gr.Markdown("---")
+    gr.Markdown(
+        "<div style='text-align:center; color: #888; font-size: 0.95em;'>Made with ❤️ by Chatterbox | Powered by Modal & Gradio</div>",
+        elem_id="footer"
+    )
 
     # Event handlers
     text.change(
