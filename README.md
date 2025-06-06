@@ -1,4 +1,4 @@
-# Enhanced Chatterbox TTS Modal API
+# Chatterbox TTS Modal API
 
 An advanced text-to-speech API powered by Chatterbox TTS, deployed on Modal with GPU acceleration. This enhanced version provides multiple endpoints, voice cloning capabilities, and comprehensive error handling.
 
