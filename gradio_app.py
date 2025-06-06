@@ -156,7 +156,7 @@ if __name__ == "__main__":
     print(f"🔊 Voice Clone Endpoint: {GENERATE_WITH_FILE_ENDPOINT}")
     
     demo.launch(
-        server_port=7860,       # Default Gradio port
+        # server_port=7860,       # Default Gradio port
         share=False,            # Set to True for public sharing
         debug=True              # Enable debug mode
     )
