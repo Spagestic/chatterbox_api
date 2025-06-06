@@ -2,6 +2,43 @@
 
 An advanced text-to-speech API powered by Chatterbox TTS, deployed on Modal with GPU acceleration. This enhanced version provides multiple endpoints, voice cloning capabilities, and comprehensive error handling.
 
+## Table of Contents
+
+- [Chatterbox TTS Modal API](#chatterbox-tts-modal-api)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Quick Start](#quick-start)
+    - [1. Deploy to Modal](#1-deploy-to-modal)
+    - [2. Test the API](#2-test-the-api)
+  - [API Endpoints](#api-endpoints)
+    - [Health Check](#health-check)
+    - [Generate Audio (Streaming)](#generate-audio-streaming)
+    - [Generate Audio (JSON Response)](#generate-audio-json-response)
+    - [Generate with File Upload](#generate-with-file-upload)
+    - [Legacy Endpoint](#legacy-endpoint)
+  - [Usage Examples](#usage-examples)
+    - [Python Client](#python-client)
+    - [cURL Examples](#curl-examples)
+    - [JavaScript/Node.js](#javascriptnodejs)
+  - [Request/Response Formats](#requestresponse-formats)
+    - [TTSRequest](#ttsrequest)
+    - [TTSResponse](#ttsresponse)
+    - [HealthResponse](#healthresponse)
+  - [Error Handling](#error-handling)
+  - [Performance](#performance)
+  - [Voice Cloning](#voice-cloning)
+  - [Development](#development)
+    - [Local Testing](#local-testing)
+    - [Configuration](#configuration)
+  - [API Documentation](#api-documentation)
+  - [License](#license)
+  - [Troubleshooting](#troubleshooting)
+    - [Common Issues](#common-issues)
+    - [Getting Help](#getting-help)
+  - [Contributing](#contributing)
+  - [Changelog](#changelog)
+    - [v2.0.0 (Enhanced Version)](#v200-enhanced-version)
+
 ## Features
 
 - 🎯 **Multiple API Endpoints** - Choose between streaming, JSON, or file upload interfaces
