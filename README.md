@@ -38,6 +38,11 @@ An advanced text-to-speech API powered by Chatterbox TTS, deployed on Modal with
   - [Contributing](#contributing)
   - [Changelog](#changelog)
     - [v2.0.0 (Enhanced Version)](#v200-enhanced-version)
+  - [Gradio Demo App](#gradio-demo-app)
+    - [Running the Gradio App](#running-the-gradio-app)
+    - [Features](#features-1)
+    - [File Structure](#file-structure)
+    - [Example Usage](#example-usage)
 
 ## Features
 
@@ -364,3 +369,57 @@ This project uses the Chatterbox TTS model. Please refer to the [Chatterbox repo
 - Request/response validation
 - Enhanced documentation
 - Backward compatibility maintained
+
+## Gradio Demo App
+
+A user-friendly Gradio interface is included for easy interaction with the Chatterbox TTS API. This app allows you to:
+
+- Enter text and generate speech using the API
+- Upload a reference audio file for voice cloning
+- Listen to generated audio directly in the browser
+- Monitor API health status
+
+### Running the Gradio App
+
+1. **Install dependencies** (if not already):
+
+   ```bash
+   pip install gradio soundfile python-dotenv
+   ```
+
+2. **Set your API endpoints** (optional):
+
+   - By default, the app uses placeholder endpoints. To use your deployed API, set the following environment variables in a `.env` file or your shell:
+     ```env
+     GENERATE_AUDIO_ENDPOINT=YOUR-MODAL-ENDPOINT-URL/generate_audio
+     GENERATE_WITH_FILE_ENDPOINT=YOUR-MODAL-ENDPOINT-URL/generate_with_file
+     HEALTH_ENDPOINT=YOUR-MODAL-ENDPOINT-URL/health
+     ```
+
+3. **Run the app:**
+
+   ```bash
+   python gradio_app.py
+   ```
+
+4. **Open your browser:**
+   - Visit [http://localhost:7860](http://localhost:7860) to use the interface.
+
+### Features
+
+- Text-to-speech with natural-sounding voices
+- Voice cloning with reference audio (WAV, MP3, MPEG)
+- Real-time API health status
+- Character count and sample text generator
+- Downloadable audio output
+
+### File Structure
+
+- `gradio_app.py`: Main Gradio app (now modularized)
+- `components/`: Contains modular Python files for each function used in the app
+
+### Example Usage
+
+- Enter text and (optionally) upload a reference audio file
+- Click "Generate Speech" to synthesize audio
+- Listen or download the result

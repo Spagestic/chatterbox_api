@@ -42,3 +42,7 @@ typing_extensions==4.14.0
 urllib3==2.4.0
 watchfiles==1.0.5
 yarl==1.20.0
+# Gradio App Dependencies
+gradio==5.8.0
+soundfile==0.12.1
+numpy==1.24.3
