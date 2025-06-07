@@ -37,6 +37,41 @@ if not GENERATE_WITH_FILE_ENDPOINT:
 if not HEALTH_ENDPOINT:
     HEALTH_ENDPOINT = "YOUR-MODAL-ENDPOINT-URL/health"
 
+# Function to accumulate audio stream
+def add_to_stream(audio, instream):
+    """Accumulate streaming audio data"""
+    import numpy as np
+    if audio is None:
+        return None, instream
+    if instream is None:
+        ret = audio
+    else:
+        # Concatenate audio data
+        ret = (audio[0], np.concatenate((instream[1], audio[1])))
+    return ret, ret
+
+def save_streamed_audio(stream_state):
+    """Convert streamed audio to file format"""
+    if stream_state is None:
+        return None
+    
+    try:
+        sample_rate, audio_data = stream_state
+        # Create temporary file
+        temp_dir = tempfile.gettempdir()
+        temp_file = os.path.join(temp_dir, f"streamed_audio_{np.random.randint(1000, 9999)}.wav")
+        
+        # Save audio data to file
+        sf.write(temp_file, audio_data, sample_rate)
+        return temp_file
+    except Exception as e:
+        print(f"Error saving streamed audio: {e}")
+        return None
+
+def clear_stream():
+    """Clear the audio stream state"""
+    return None, None
+
 # Create the Gradio interface
 with gr.Blocks(css=custom_css, title="Chatterbox TTS API Demo") as demo:
     gr.Markdown(
