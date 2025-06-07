@@ -48,17 +48,6 @@ with gr.Blocks(css=custom_css, title="Chatterbox TTS API Demo") as demo:
         elem_id="main-title"
     )
     
-    with gr.Row():
-        with gr.Column(scale=1):
-            api_status = gr.Textbox(
-                label="🔍 API Status",
-                value=check_api_health(),
-                interactive=False,
-                elem_classes=["status-box"],
-                elem_id="api-status-box"
-            )
-            refresh_status_btn = gr.Button("🔄 Refresh Status", size="sm", variant="secondary")
-    
     gr.Markdown("---")
     
     with gr.Row():
@@ -135,11 +124,6 @@ with gr.Blocks(css=custom_css, title="Chatterbox TTS API Demo") as demo:
     sample_btn.click(
         fn=generate_sample_text,
         outputs=[text]
-    )
-    
-    refresh_status_btn.click(
-        fn=check_api_health,
-        outputs=[api_status]
     )
     
     generate_btn.click(
