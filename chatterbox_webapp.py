@@ -20,7 +20,7 @@ Key Features:
 
 from pathlib import Path
 import modal
-from webapp import create_web_app
+from modal_webapp import create_web_app
 
 # Define the container image with all dependencies
 image = modal.Image.debian_slim(python_version="3.12").pip_install(
