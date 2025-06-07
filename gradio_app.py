@@ -72,11 +72,16 @@ with gr.Blocks(css=custom_css, title="Chatterbox TTS API Demo") as demo:
                 )
             gr.Markdown("---")
             with gr.Accordion("🎤 Voice Cloning (Optional)", open=False):
+                # Streaming audio input (microphone or upload)
                 ref_wav = gr.Audio(
                     sources=["upload", "microphone"],
-                    type="filepath",
+                    type="numpy",
+                    streaming=True,
+                    autoplay=True,
                     label="Reference Audio File"
                 )
+                # State to accumulate audio stream
+                stream_state = gr.State(value=None)
                 gr.Markdown(
                     """
                     **Voice Cloning Tips:**
@@ -114,6 +119,18 @@ with gr.Blocks(css=custom_css, title="Chatterbox TTS API Demo") as demo:
         elem_id="footer"
     )
 
+    # Function to accumulate audio stream
+    def add_to_stream(audio, instream):
+        import numpy as np
+        if audio is None:
+            return None, instream
+        if instream is None:
+            ret = audio
+        else:
+            # Concatenate audio data
+            ret = (audio[0], np.concatenate((instream[1], audio[1])))
+        return ret, ret
+
     # Event handlers
     text.change(
         fn=update_char_count,
@@ -125,6 +142,9 @@ with gr.Blocks(css=custom_css, title="Chatterbox TTS API Demo") as demo:
         fn=generate_sample_text,
         outputs=[text]
     )
+
+    # Stream audio from microphone/upload and accumulate in state
+    ref_wav.stream(add_to_stream, [ref_wav, stream_state], [ref_wav, stream_state])
     
     generate_btn.click(
         fn=generate_tts_audio,
