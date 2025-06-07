@@ -43,6 +43,7 @@ An advanced text-to-speech API powered by Chatterbox TTS, deployed on Modal with
     - [Features](#features-1)
     - [File Structure](#file-structure)
     - [Example Usage](#example-usage)
+  - [Modular Architecture](#modular-architecture)
 
 ## Features
 
@@ -423,3 +424,27 @@ A user-friendly Gradio interface is included for easy interaction with the Chatt
 - Enter text and (optionally) upload a reference audio file
 - Click "Generate Speech" to synthesize audio
 - Listen or download the result
+
+## Modular Architecture
+
+> **New in v2.1+:** The codebase is now modularized for maintainability and scalability.
+
+All core API logic is organized in the `api/` folder:
+
+```text
+api/
+├── __init__.py          # Package initialization and exports
+├── config.py            # Modal app configuration and container image
+├── models.py            # Pydantic request/response models
+├── audio_utils.py       # Audio processing utilities
+├── tts_service.py       # Main TTS service class with endpoints
+└── README.md            # Documentation for the package
+```
+
+**Benefits:**
+
+- Clear separation of concerns (config, models, utils, service)
+- Easier to maintain and extend
+- Improved testability and code reuse
+
+The main entry point (`chatterbox_tts.py`) now simply imports and exposes the modular API. All endpoints and logic remain the same, but the code is cleaner and easier to navigate.
