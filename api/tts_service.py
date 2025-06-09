@@ -1,4 +1,3 @@
-
 """
 Main TTS service class with all API endpoints.
 """
@@ -40,9 +39,6 @@ class ChatterboxTTSService:
         """Validate text input parameters."""
         if not text or len(text.strip()) == 0:
             raise HTTPException(status_code=400, detail="Text cannot be empty")
-        
-        if len(text) > 1000:
-            raise HTTPException(status_code=400, detail="Text too long (max 1000 characters)")
 
     def _process_voice_prompt(self, voice_prompt_base64: Optional[str]) -> Optional[str]:
         """Process base64 encoded voice prompt and return temp file path."""
