@@ -21,8 +21,14 @@ with image.imports():
     warnings.filterwarnings("ignore", message=".*past_key_values.*", category=FutureWarning)
 
 
-@app.cls(gpu="a10g", scaledown_window=60 * 5, enable_memory_snapshot=True)
-@modal.concurrent(max_inputs=10)
+@app.cls(
+    gpu="a10g", 
+    scaledown_window=60 * 5, 
+    enable_memory_snapshot=True
+    )
+@modal.concurrent(
+    max_inputs=10
+    )
 class ChatterboxTTSService:
     """
     Advanced text-to-speech service using Chatterbox TTS model.
