@@ -364,13 +364,13 @@ class ChatterboxTTSService:
             
             # Ensure final_audio is a 1D numpy array
             import numpy as np
+            # Unwrap tuple if needed (fix for tuple error after concatenation)
             if isinstance(final_audio, tuple):
                 final_audio = final_audio[0]
             if hasattr(final_audio, 'shape') and final_audio.ndim > 1:
                 final_audio_mono = final_audio[:, 0] if final_audio.shape[1] > 0 else final_audio.flatten()
             else:
                 final_audio_mono = final_audio
-            
             wav_tuple = (final_audio_mono,)
             buffer = AudioUtils.save_audio_to_buffer(wav_tuple, self.model.sr)
             
@@ -458,11 +458,13 @@ class ChatterboxTTSService:
                 final_audio = concatenator.concatenate_audio_chunks(audio_chunks, self.model.sr)
             
             # Create audio buffer and convert to base64
+            # Unwrap tuple if needed (fix for tuple error after concatenation)
+            if isinstance(final_audio, tuple):
+                final_audio = final_audio[0]
             if hasattr(final_audio, 'shape') and final_audio.ndim > 1:
                 final_audio_mono = final_audio[:, 0] if final_audio.shape[1] > 0 else final_audio.flatten()
             else:
                 final_audio_mono = final_audio
-            
             wav_tuple = (final_audio_mono,)
             buffer = AudioUtils.save_audio_to_buffer(wav_tuple, self.model.sr)
             audio_base64 = base64.b64encode(buffer.read()).decode('utf-8')
