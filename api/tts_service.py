@@ -325,10 +325,7 @@ class ChatterboxTTSService:
                 def process_chunk(chunk_text: str):
                     """Process a single chunk."""
                     wav_result = self._generate_audio(chunk_text, audio_prompt_path)
-                    # Return just the audio array, not the full result
-                    if isinstance(wav_result, tuple):
-                        return wav_result[0]  # Extract audio array
-                    return wav_result
+                    return wav_result[0] if isinstance(wav_result, tuple) else wav_result
                 
                 # Use ThreadPoolExecutor for parallel processing
                 audio_chunks = []
@@ -345,7 +342,6 @@ class ChatterboxTTSService:
                         chunk_index = future_to_chunk[future]
                         try:
                             audio_result = future.result()
-                            # Store the audio array directly
                             results[chunk_index] = audio_result
                         except Exception as exc:
                             print(f'Chunk {chunk_index} generated an exception: {exc}')
@@ -366,15 +362,15 @@ class ChatterboxTTSService:
                 
                 final_audio = concatenator.concatenate_audio_chunks(audio_chunks, self.model.sr)
             
-            # Create audio buffer
-            # Ensure final_audio is in the correct format for AudioUtils
+            # Ensure final_audio is a 1D numpy array
+            import numpy as np
+            if isinstance(final_audio, tuple):
+                final_audio = final_audio[0]
             if hasattr(final_audio, 'shape') and final_audio.ndim > 1:
-                # If it's multi-dimensional, take the first channel
                 final_audio_mono = final_audio[:, 0] if final_audio.shape[1] > 0 else final_audio.flatten()
             else:
                 final_audio_mono = final_audio
             
-            # Create a tuple format that AudioUtils expects (similar to model.generate output)
             wav_tuple = (final_audio_mono,)
             buffer = AudioUtils.save_audio_to_buffer(wav_tuple, self.model.sr)
             
@@ -435,7 +431,8 @@ class ChatterboxTTSService:
                 import concurrent.futures
                 
                 def process_chunk(chunk_text: str):
-                    return self._generate_audio(chunk_text, audio_prompt_path)
+                    wav_result = self._generate_audio(chunk_text, audio_prompt_path)
+                    return wav_result[0] if isinstance(wav_result, tuple) else wav_result
                 
                 audio_chunks = []
                 with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
