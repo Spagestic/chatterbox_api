@@ -18,6 +18,7 @@ from .text_processing import TextChunker, AudioConcatenator
 
 with image.imports():
     from chatterbox.tts import ChatterboxTTS
+    import torch # Add torch import here
     # Suppress specific transformers deprecation warnings
     warnings.filterwarnings("ignore", message=".*past_key_values.*", category=FutureWarning)
 
@@ -362,132 +363,59 @@ class ChatterboxTTSService:
                 
                 final_audio = concatenator.concatenate_audio_chunks(audio_chunks, self.model.sr)
             
-            # Ensure final_audio is a 1D numpy array
+            # --- Start of new audio processing logic ---
+            import torch
             import numpy as np
-            # Unwrap tuple if needed (fix for tuple error after concatenation)
-            if isinstance(final_audio, tuple):
-                final_audio = final_audio[0]
-            if hasattr(final_audio, 'shape') and final_audio.ndim > 1:
-                final_audio_mono = final_audio[:, 0] if final_audio.shape[1] > 0 else final_audio.flatten()
+
+            processed_tensor = final_audio
+            # Unwrap if it's a single-element tuple repeatedly
+            while isinstance(processed_tensor, tuple) and len(processed_tensor) == 1:
+                processed_tensor = processed_tensor[0]
+
+            # Convert to PyTorch tensor if it's a NumPy array
+            if isinstance(processed_tensor, np.ndarray):
+                processed_tensor = torch.from_numpy(processed_tensor.astype(np.float32))
+
+            if not isinstance(processed_tensor, torch.Tensor): # Check if it's a tensor now
+                raise TypeError(f"Audio data after concatenation is not a tensor. Got type: {type(processed_tensor)}")
+
+            # Ensure correct shape (C, L) for torchaudio.save
+            if processed_tensor.ndim == 1:  # Shape (L,)
+                audio_to_save = processed_tensor.unsqueeze(0)  # Convert to (1, L)
+            elif processed_tensor.ndim == 2: # Shape (C, L)
+                if processed_tensor.shape[0] == 0:
+                    raise ValueError(f"Audio tensor has 0 channels: {processed_tensor.shape}")
+                if processed_tensor.shape[0] > 1: # If C > 1 (stereo/multi-channel)
+                    print(f"Multi-channel audio (shape {processed_tensor.shape}) detected. Taking the first channel.")
+                    audio_to_save = processed_tensor[0, :].unsqueeze(0) # Result is (1, L)
+                else: # Already (1, L)
+                    audio_to_save = processed_tensor
             else:
-                final_audio_mono = final_audio
-            wav_tuple = (final_audio_mono,)
-            buffer = AudioUtils.save_audio_to_buffer(wav_tuple, self.model.sr)
+                raise ValueError(f"Unexpected audio tensor dimensions: {processed_tensor.ndim}, shape: {processed_tensor.shape}")
             
-            duration = len(final_audio_mono) / self.model.sr
-            
+            buffer = AudioUtils.save_audio_to_buffer(audio_to_save, self.model.sr)
+            audio_base64 = base64.b64encode(buffer.read()).decode('utf-8')
+            duration = audio_to_save.shape[1] / self.model.sr # Use shape[1] for length
+            # --- End of new audio processing logic ---
+
+            # Prepare processing info
+            processing_info = {
+                "total_chunks": len(text_chunks),
+                "processed_chunks": len(audio_chunks),
+                "failed_chunks": len(text_chunks) - len(audio_chunks),
+                "sample_rate": self.model.sr,
+                "duration": duration
+            }
+
             print(f"Full text processing complete! Final audio duration: {duration:.2f} seconds")
             
             return StreamingResponse(
                 io.BytesIO(buffer.read()),
                 media_type="audio/wav",
                 headers={
-                    "Content-Disposition": "attachment; filename=full_text_speech.wav",
-                    "X-Audio-Duration": str(duration),
-                    "X-Chunks-Processed": str(len(text_chunks)),
-                    "X-Total-Characters": str(len(request.text))
+                    "Content-Disposition": "attachment; filename=generated_full_text_speech.wav",
+                    "X-Audio-Duration": str(duration)
                 }
-            )
-
-        except HTTPException:
-            raise
-        except Exception as e:
-            print(f"Error in full text processing: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Full text audio generation failed: {str(e)}")
-    
-    @modal.fastapi_endpoint(docs=True, method="POST")
-    def generate_full_text_json(self, request: FullTextTTSRequest) -> FullTextTTSResponse:
-        """
-        Generate speech audio from full text and return as JSON with base64 encoded audio.
-        
-        Similar to generate_full_text_audio but returns JSON response with processing info.
-        
-        Args:
-            request: FullTextTTSRequest containing text and processing parameters
-            
-        Returns:
-            FullTextTTSResponse with base64 encoded audio data and processing information
-        """
-        try:
-            self._validate_text_input(request.text)
-            audio_prompt_path = self._process_voice_prompt(request.voice_prompt_base64)
-            
-            # Initialize text chunker
-            chunker = TextChunker(
-                max_chunk_size=request.max_chunk_size,
-                overlap_sentences=request.overlap_sentences
-            )
-            
-            # Chunk the text
-            text_chunks = chunker.chunk_text(request.text)
-            chunk_info = chunker.get_chunk_info(text_chunks)
-            
-            # Process similar to generate_full_text_audio
-            if len(text_chunks) == 1:
-                wav = self._generate_audio(text_chunks[0], audio_prompt_path)
-                final_audio = wav[0] if isinstance(wav, tuple) else wav
-            else:
-                # Process chunks in parallel and concatenate
-                import concurrent.futures
-                
-                def process_chunk(chunk_text: str):
-                    wav_result = self._generate_audio(chunk_text, audio_prompt_path)
-                    return wav_result[0] if isinstance(wav_result, tuple) else wav_result
-                
-                audio_chunks = []
-                with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-                    future_to_chunk = {
-                        executor.submit(process_chunk, chunk): i 
-                        for i, chunk in enumerate(text_chunks)
-                    }
-                    
-                    results = [None] * len(text_chunks)
-                    for future in concurrent.futures.as_completed(future_to_chunk):
-                        chunk_index = future_to_chunk[future]
-                        wav_result = future.result()
-                        audio_array = wav_result[0] if isinstance(wav_result, tuple) else wav_result
-                        results[chunk_index] = audio_array
-                
-                audio_chunks = [result for result in results if result is not None]
-                
-                concatenator = AudioConcatenator(
-                    silence_duration=request.silence_duration,
-                    fade_duration=request.fade_duration
-                )
-                
-                final_audio = concatenator.concatenate_audio_chunks(audio_chunks, self.model.sr)
-            
-            # Create audio buffer and convert to base64
-            # Unwrap tuple if needed (fix for tuple error after concatenation)
-            if isinstance(final_audio, tuple):
-                final_audio = final_audio[0]
-            if hasattr(final_audio, 'shape') and final_audio.ndim > 1:
-                final_audio_mono = final_audio[:, 0] if final_audio.shape[1] > 0 else final_audio.flatten()
-            else:
-                final_audio_mono = final_audio
-            wav_tuple = (final_audio_mono,)
-            buffer = AudioUtils.save_audio_to_buffer(wav_tuple, self.model.sr)
-            audio_base64 = base64.b64encode(buffer.read()).decode('utf-8')
-            duration = len(final_audio_mono) / self.model.sr
-
-            # Prepare processing info
-            processing_info = {
-                "chunk_info": chunk_info,
-                "processing_parameters": {
-                    "max_chunk_size": request.max_chunk_size,
-                    "silence_duration": request.silence_duration,
-                    "fade_duration": request.fade_duration,
-                    "overlap_sentences": request.overlap_sentences
-                },
-                "total_processing_time": duration
-            }
-
-            return FullTextTTSResponse(
-                success=True,
-                message=f"Full text audio generated successfully from {len(text_chunks)} chunks",
-                audio_base64=audio_base64,
-                duration_seconds=duration,
-                processing_info=processing_info
             )
 
         except HTTPException as http_exc:
