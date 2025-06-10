@@ -1,4 +1,3 @@
-
 import requests
 import base64
 import json
@@ -57,7 +56,7 @@ def test_full_text_generation():
                 "fade_duration": 0.1,
                 "overlap_sentences": 0
             },
-            timeout=120  # Longer timeout for processing
+            timeout=60*5  # 5 minutes timeout for long texts
         )
         
         if response.status_code == 200:

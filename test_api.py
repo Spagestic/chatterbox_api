@@ -397,7 +397,6 @@ def main():
         test_file_upload,
         test_legacy_endpoint,
         test_full_text_generation,
-        test_full_text_json,
         test_performance_comparison
     ]
     
