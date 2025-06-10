@@ -1,450 +1,280 @@
-# Chatterbox TTS Modal API
+# Enhanced Chatterbox TTS API
 
-An advanced text-to-speech API powered by Chatterbox TTS, deployed on Modal with GPU acceleration. This enhanced version provides multiple endpoints, voice cloning capabilities, and comprehensive error handling.
-
-## Table of Contents
-
-- [Chatterbox TTS Modal API](#chatterbox-tts-modal-api)
-  - [Table of Contents](#table-of-contents)
-  - [Features](#features)
-  - [Quick Start](#quick-start)
-    - [1. Deploy to Modal](#1-deploy-to-modal)
-    - [2. Test the API](#2-test-the-api)
-  - [API Endpoints](#api-endpoints)
-    - [Health Check](#health-check)
-    - [Generate Audio (Streaming)](#generate-audio-streaming)
-    - [Generate Audio (JSON Response)](#generate-audio-json-response)
-    - [Generate with File Upload](#generate-with-file-upload)
-    - [Legacy Endpoint](#legacy-endpoint)
-  - [Usage Examples](#usage-examples)
-    - [Python Client](#python-client)
-    - [cURL Examples](#curl-examples)
-    - [JavaScript/Node.js](#javascriptnodejs)
-  - [Request/Response Formats](#requestresponse-formats)
-    - [TTSRequest](#ttsrequest)
-    - [TTSResponse](#ttsresponse)
-    - [HealthResponse](#healthresponse)
-  - [Error Handling](#error-handling)
-  - [Performance](#performance)
-  - [Voice Cloning](#voice-cloning)
-  - [Development](#development)
-    - [Local Testing](#local-testing)
-    - [Configuration](#configuration)
-  - [API Documentation](#api-documentation)
-  - [License](#license)
-  - [Troubleshooting](#troubleshooting)
-    - [Common Issues](#common-issues)
-    - [Getting Help](#getting-help)
-  - [Contributing](#contributing)
-  - [Changelog](#changelog)
-    - [v2.0.0 (Enhanced Version)](#v200-enhanced-version)
-  - [Gradio Demo App](#gradio-demo-app)
-    - [Running the Gradio App](#running-the-gradio-app)
-    - [Features](#features-1)
-    - [File Structure](#file-structure)
-    - [Example Usage](#example-usage)
-  - [Modular Architecture](#modular-architecture)
+This package contains the modular components of the Enhanced Chatterbox TTS API with GPU-accelerated processing, intelligent text chunking, and server-side audio concatenation.
 
 ## Features
 
-- 🎯 **Multiple API Endpoints** - Choose between streaming, JSON, or file upload interfaces
-- 🎭 **Voice Cloning** - Use custom audio prompts to clone voices
-- 🛡️ **Error Handling** - Comprehensive validation and error messages
-- 📊 **Health Monitoring** - Built-in health check endpoint
-- 📚 **API Documentation** - Auto-generated OpenAPI/Swagger docs
-- 🔄 **Backward Compatibility** - Legacy endpoint still supported
-- ⚡ **GPU Acceleration** - Fast inference with A10G GPU
-- 🏗️ **Scalable** - Auto-scaling with configurable concurrency
+- **GPU-Accelerated Processing**: Leverage server GPU for parallel chunk processing
+- **Intelligent Text Chunking**: Smart text splitting that respects sentence and paragraph boundaries
+- **Server-Side Concatenation**: Seamless audio merging with fade effects and silence control
+- **Voice Cloning**: Optional voice prompt for personalized speech generation
+- **Multiple Response Formats**: Streaming audio, complete files, or JSON with base64 encoding
+- **Scalable Architecture**: Handles texts of any length efficiently
 
-## Quick Start
+## Structure
 
-### 1. Deploy to Modal
-
-```bash
-modal deploy chatterbox_tts.py
+```
+api/
+├── __init__.py          # Package initialization and exports
+├── config.py            # Modal app configuration and container image setup
+├── models.py            # Pydantic request/response models (enhanced with full-text support)
+├── audio_utils.py       # Audio processing utilities and helper functions
+├── text_processing.py   # Server-side text chunking and audio concatenation
+├── tts_service.py       # Main TTS service class with all API endpoints
+├── test_api.py          # Comprehensive API testing suite
+└── README.md           # This file
 ```
 
-### 2. Test the API
+## Components
 
-Update the `BASE_URL` in `test_api.py` with your Modal endpoint and run:
+### config.py
 
-```bash
-python test_api.py
-```
+- Modal app configuration with GPU support (A10G)
+- Container image setup with required dependencies
+- Centralized configuration management
+- Memory snapshot and scaling configuration
+
+### models.py
+
+- `TTSRequest`: Standard request model for TTS generation
+- `FullTextTTSRequest`: Enhanced request model for full-text processing with chunking parameters
+- `TTSResponse`: Standard response model for JSON endpoints
+- `FullTextTTSResponse`: Enhanced response with processing information
+- `HealthResponse`: Response model for health checks
+- All models include proper type hints, validation, and documentation
+
+### text_processing.py
+
+- `TextChunker`: Intelligent server-side text chunking with configurable parameters
+- `AudioConcatenator`: Server-side audio concatenation with fade effects and silence control
+- Optimized for GPU processing and large text handling
+
+### audio_utils.py
+
+- `AudioUtils`: Static utility class for audio operations
+- Buffer management for audio data
+- Temporary file handling with automatic cleanup
+- Reusable audio processing functions
+
+### tts_service.py
+
+- `ChatterboxTTSService`: Main service class with all endpoints
+- GPU-accelerated TTS model loading and inference
+- Multiple API endpoints for different use cases
+- Comprehensive error handling and validation
+- New full-text processing endpoints with parallel chunk processing
+
+### test_api.py
+
+- Comprehensive testing suite for all API endpoints
+- Tests for basic generation, voice cloning, file uploads, and full-text processing
+- Performance benchmarking and validation scripts
 
 ## API Endpoints
 
-### Health Check
+### Standard Endpoints
+
+#### `GET /health`
+
+Health check endpoint to verify model status and service availability.
 
 ```bash
-GET /health
+curl -X GET "YOUR-ENDPOINT/health"
 ```
 
-Returns the status of the API and model loading state.
+#### `POST /generate_audio`
 
-### Generate Audio (Streaming)
+Generate speech audio from text with optional voice cloning (streaming response).
 
 ```bash
-POST /generate_audio
-Content-Type: application/json
-
-{
-  "text": "Hello, world!",
-  "voice_prompt_base64": "optional_base64_encoded_audio"
-}
+curl -X POST "YOUR-ENDPOINT/generate_audio" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Hello world!"}' \
+  --output output.wav
 ```
 
-Returns audio file as streaming response.
+#### `POST /generate_json`
 
-### Generate Audio (JSON Response)
+Generate speech and return JSON with base64 encoded audio.
 
 ```bash
-POST /generate_json
-Content-Type: application/json
-
-{
-  "text": "Hello, world!",
-  "voice_prompt_base64": "optional_base64_encoded_audio"
-}
+curl -X POST "YOUR-ENDPOINT/generate_json" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Hello world!"}'
 ```
 
-Returns JSON with base64-encoded audio data and metadata.
+#### `POST /generate_with_file`
 
-### Generate with File Upload
+Generate speech with file upload for voice cloning.
 
 ```bash
-POST /generate_with_file
-Content-Type: multipart/form-data
-
-text=Hello, world!
-voice_prompt=@voice_sample.wav
+curl -X POST "YOUR-ENDPOINT/generate_with_file" \
+  -F "text=Hello world!" \
+  -F "voice_prompt=@voice_sample.wav" \
+  --output output.wav
 ```
 
-Upload audio files directly for voice cloning.
+### Enhanced Full-Text Endpoints
 
-### Legacy Endpoint
+#### `POST /generate_full_text_audio`
+
+🆕 Generate speech from full text with server-side chunking and parallel processing.
 
 ```bash
-POST /generate
-Content-Type: application/x-www-form-urlencoded
-
-prompt=Hello, world!
+curl -X POST "YOUR-ENDPOINT/generate_full_text_audio" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Your very long text here...",
+    "max_chunk_size": 800,
+    "silence_duration": 0.5,
+    "fade_duration": 0.1,
+    "overlap_sentences": 0
+  }' \
+  --output full_text_output.wav
 ```
 
-Maintains backward compatibility with the original API.
+#### `POST /generate_full_text_json`
 
-## Usage Examples
+🆕 Generate speech from full text and return JSON with processing information.
 
-### Python Client
+```bash
+curl -X POST "YOUR-ENDPOINT/generate_full_text_json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Your very long text here...",
+    "max_chunk_size": 800,
+    "silence_duration": 0.5
+  }'
+```
+
+### Legacy Endpoints
+
+#### `POST /generate`
+
+Legacy endpoint for backward compatibility.
+
+```bash
+curl -X POST "YOUR-ENDPOINT/generate?prompt=Hello%20world!" \
+  --output legacy_output.wav
+```
+
+## Request Parameters
+
+### FullTextTTSRequest Parameters
+
+- **`text`** (required): The text to convert to speech (any length)
+- **`voice_prompt_base64`** (optional): Base64 encoded voice prompt for cloning
+- **`max_chunk_size`** (optional, default: 800): Maximum characters per chunk
+- **`silence_duration`** (optional, default: 0.5): Silence between chunks in seconds
+- **`fade_duration`** (optional, default: 0.1): Fade in/out duration in seconds
+- **`overlap_sentences`** (optional, default: 0): Sentences to overlap between chunks
+
+## Response Headers
+
+Enhanced endpoints include additional headers with processing information:
+
+- **`X-Audio-Duration`**: Duration of generated audio in seconds
+- **`X-Chunks-Processed`**: Number of text chunks processed
+- **`X-Total-Characters`**: Total characters in the input text
+
+## Usage
+
+```python
+from api import app, ChatterboxTTSService
+
+# The app is automatically configured and ready to deploy
+# The service class contains all the endpoints
+```
+
+### Python Client Example
 
 ```python
 import requests
-import base64
 
-# Basic text-to-speech
+# Generate audio from long text
 response = requests.post(
-    "YOUR-ENDPOINT-URL/generate_audio",
-    json={"text": "Hello from Python!"}
-)
-with open("output.wav", "wb") as f:
-    f.write(response.content)
-
-# Voice cloning with base64
-with open("voice_sample.wav", "rb") as f:
-    voice_data = base64.b64encode(f.read()).decode()
-
-response = requests.post(
-    "YOUR-ENDPOINT-URL/generate_audio",
+    "YOUR-ENDPOINT/generate_full_text_audio",
     json={
-        "text": "This will sound like the voice sample!",
-        "voice_prompt_base64": voice_data
+        "text": "Your long document text here...",
+        "max_chunk_size": 800,
+        "silence_duration": 0.5
     }
 )
-with open("cloned_voice.wav", "wb") as f:
-    f.write(response.content)
 
-# JSON response
-response = requests.post(
-    "YOUR-ENDPOINT-URL/generate_json",
-    json={"text": "Return as JSON"}
-)
-data = response.json()
-if data['success']:
-    audio_data = base64.b64decode(data['audio_base64'])
-    with open("json_output.wav", "wb") as f:
-        f.write(audio_data)
-    print(f"Duration: {data['duration_seconds']:.2f} seconds")
+if response.status_code == 200:
+    with open("output.wav", "wb") as f:
+        f.write(response.content)
+    print("Audio generated successfully!")
 ```
 
-### cURL Examples
+## Performance Characteristics
+
+### Standard Processing
+
+- **Text Length**: Up to ~1000 characters optimal
+- **Processing Time**: ~2-5 seconds per request
+- **Use Case**: Short texts, real-time applications
+
+### Full-Text Processing
+
+- **Text Length**: Unlimited (automatically chunked)
+- **Processing Time**: ~5-15 seconds for long documents
+- **Parallelization**: Up to 4 concurrent chunks
+- **Use Case**: Documents, articles, books
+
+## Deployment
 
 ```bash
-# Health check
-curl -X GET "YOUR-ENDPOINT-URL/health"
+# Deploy the enhanced API
+modal deploy tts_service.py
 
-# Basic generation
-curl -X POST "YOUR-ENDPOINT-URL/generate_audio" \
-  -H "Content-Type: application/json" \
-  -d '{"text": "Hello, world!"}' \
-  --output output.wav
-
-# With voice prompt file
-curl -X POST "YOUR-ENDPOINT-URL/generate_with_file" \
-  -F "text=Clone this voice!" \
-  -F "voice_prompt=@voice_sample.wav" \
-  --output cloned.wav
-
-# JSON response
-curl -X POST "YOUR-ENDPOINT-URL/generate_json" \
-  -H "Content-Type: application/json" \
-  -d '{"text": "JSON response"}' \
-  | jq -r '.audio_base64' | base64 -d > json_output.wav
-```
-
-### JavaScript/Node.js
-
-```javascript
-// Basic generation
-const response = await fetch("YOUR-ENDPOINT-URL/generate_audio", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ text: "Hello from JavaScript!" }),
-});
-
-const audioBlob = await response.blob();
-const audioUrl = URL.createObjectURL(audioBlob);
-
-// Play in browser
-const audio = new Audio(audioUrl);
-audio.play();
-
-// Voice cloning with file
-const formData = new FormData();
-formData.append("text", "Clone this voice!");
-formData.append("voice_prompt", fileInput.files[0]);
-
-const clonedResponse = await fetch("YOUR-ENDPOINT-URL/generate_with_file", {
-  method: "POST",
-  body: formData,
-});
-```
-
-## Request/Response Formats
-
-### TTSRequest
-
-```json
-{
-  "text": "string (required, max 1000 chars)",
-  "voice_prompt_base64": "string (optional, base64 encoded audio)"
-}
-```
-
-### TTSResponse
-
-```json
-{
-  "success": "boolean",
-  "message": "string",
-  "audio_base64": "string (base64 encoded WAV)",
-  "duration_seconds": "number"
-}
-```
-
-### HealthResponse
-
-```json
-{
-  "status": "string",
-  "model_loaded": "boolean"
-}
-```
-
-## Error Handling
-
-The API provides comprehensive error handling with appropriate HTTP status codes:
-
-- `400 Bad Request` - Invalid input (empty text, too long, invalid audio)
-- `500 Internal Server Error` - Model or generation errors
-
-Error responses include descriptive messages to help diagnose issues.
-
-## Performance
-
-- **Cold Start**: ~30 seconds (model loading with memory snapshots)
-- **Generation Time**: 2-3 seconds for 5-second audio clips
-- **Concurrency**: Up to 10 concurrent requests per container
-- **Auto-scaling**: Containers scale down after 5 minutes of inactivity
-- **GPU**: NVIDIA A10G for fast inference
-
-## Voice Cloning
-
-The API supports voice cloning through audio prompts:
-
-1. **Supported Formats**: WAV, MP3, MPEG
-2. **Upload Methods**:
-   - Base64 encoding in JSON requests
-   - Direct file upload via multipart/form-data
-3. **Quality Tips**:
-   - Use clear, high-quality audio samples
-   - 5-30 seconds of speech works best
-   - Single speaker recordings preferred
-
-## Development
-
-### Local Testing
-
-1. Install dependencies:
-
-```bash
-pip install modal requests
-```
-
-2. Set up Modal:
-
-```bash
-modal token new
-```
-
-3. Deploy the app:
-
-```bash
-modal deploy chatterbox_tts.py
-```
-
-4. Run tests:
-
-```bash
+# Test the deployment
 python test_api.py
 ```
 
-### Configuration
+````
 
-The Modal app is configured with:
+## Benefits of Enhanced Architecture
 
-- GPU: NVIDIA A10G
-- Python: 3.12
-- Concurrent requests: 10 per container
-- Scale-down window: 5 minutes
-- Memory snapshots: Enabled
+1. **GPU Acceleration**: Server-side processing leverages GPU resources for faster inference
+2. **Intelligent Chunking**: Smart text splitting that preserves sentence integrity
+3. **Parallel Processing**: Multiple chunks processed simultaneously for better performance
+4. **Scalability**: Handles texts of any length without client-side limitations
+5. **Separation of Concerns**: Each file has a specific responsibility
+6. **Maintainability**: Easier to update and modify individual components
+7. **Testability**: Components can be tested in isolation
+8. **Reusability**: Components can be imported and used in other projects
+9. **Readability**: Smaller files are easier to understand and navigate
 
-## API Documentation
+## Testing
 
-Once deployed, visit `YOUR-ENDPOINT-URL/docs` for interactive Swagger documentation.
+Run the comprehensive test suite:
 
-## License
+```bash
+cd api/
+python test_api.py
+````
 
-This project uses the Chatterbox TTS model. Please refer to the [Chatterbox repository](https://github.com/resemble-ai/chatterbox) for licensing information.
+The test suite includes:
 
-## Troubleshooting
+- Health check validation
+- Basic text-to-speech generation
+- JSON response testing
+- Voice cloning functionality
+- File upload testing
+- Full-text processing validation
+- Performance benchmarking
 
-### Common Issues
+## Environment Variables
 
-1. **Model Loading Errors**: Ensure GPU memory is sufficient
-2. **Audio Format Issues**: Verify uploaded files are valid audio
-3. **Timeout Errors**: Large texts may take longer to process
-4. **Memory Issues**: Large audio prompts may cause OOM errors
+Set these environment variables for testing:
 
-### Getting Help
-
-- Check the `/health` endpoint for model status
-- Review logs in Modal dashboard
-- Ensure your audio files are in supported formats
-- Verify text length is under 1000 characters
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Test your changes with `test_api.py`
-4. Submit a pull request
-
-## Changelog
-
-### v2.0.0 (Enhanced Version)
-
-- Added multiple API endpoints
-- Voice cloning support
-- Comprehensive error handling
-- Health monitoring
-- Request/response validation
-- Enhanced documentation
-- Backward compatibility maintained
-
-## Gradio Demo App
-
-A user-friendly Gradio interface is included for easy interaction with the Chatterbox TTS API. This app allows you to:
-
-- Enter text and generate speech using the API
-- Upload a reference audio file for voice cloning
-- Listen to generated audio directly in the browser
-- Monitor API health status
-
-### Running the Gradio App
-
-1. **Install dependencies** (if not already):
-
-   ```bash
-   pip install gradio soundfile python-dotenv
-   ```
-
-2. **Set your API endpoints** (optional):
-
-   - By default, the app uses placeholder endpoints. To use your deployed API, set the following environment variables in a `.env` file or your shell:
-     ```env
-     GENERATE_AUDIO_ENDPOINT=YOUR-MODAL-ENDPOINT-URL/generate_audio
-     GENERATE_WITH_FILE_ENDPOINT=YOUR-MODAL-ENDPOINT-URL/generate_with_file
-     HEALTH_ENDPOINT=YOUR-MODAL-ENDPOINT-URL/health
-     ```
-
-3. **Run the app:**
-
-   ```bash
-   python gradio_app.py
-   ```
-
-4. **Open your browser:**
-   - Visit [http://localhost:7860](http://localhost:7860) to use the interface.
-
-### Features
-
-- Text-to-speech with natural-sounding voices
-- Voice cloning with reference audio (WAV, MP3, MPEG)
-- Real-time API health status
-- Character count and sample text generator
-- Downloadable audio output
-
-### File Structure
-
-- `gradio_app.py`: Main Gradio app (now modularized)
-- `components/`: Contains modular Python files for each function used in the app
-
-### Example Usage
-
-- Enter text and (optionally) upload a reference audio file
-- Click "Generate Speech" to synthesize audio
-- Listen or download the result
-
-## Modular Architecture
-
-> **New in v2.1+:** The codebase is now modularized for maintainability and scalability.
-
-All core API logic is organized in the `api/` folder:
-
-```text
-api/
-├── __init__.py          # Package initialization and exports
-├── config.py            # Modal app configuration and container image
-├── models.py            # Pydantic request/response models
-├── audio_utils.py       # Audio processing utilities
-├── tts_service.py       # Main TTS service class with endpoints
-└── README.md            # Documentation for the package
+```bash
+HEALTH_ENDPOINT=https://your-modal-endpoint.modal.run/health
+GENERATE_AUDIO_ENDPOINT=https://your-modal-endpoint.modal.run/generate_audio
+GENERATE_JSON_ENDPOINT=https://your-modal-endpoint.modal.run/generate_json
+GENERATE_WITH_FILE_ENDPOINT=https://your-modal-endpoint.modal.run/generate_with_file
+GENERATE_ENDPOINT=https://your-modal-endpoint.modal.run/generate
+FULL_TEXT_TTS_ENDPOINT=https://your-modal-endpoint.modal.run/generate_full_text_audio
+FULL_TEXT_JSON_ENDPOINT=https://your-modal-endpoint.modal.run/generate_full_text_json
 ```
-
-**Benefits:**
-
-- Clear separation of concerns (config, models, utils, service)
-- Easier to maintain and extend
-- Improved testability and code reuse
-
-The main entry point (`chatterbox_tts.py`) now simply imports and exposes the modular API. All endpoints and logic remain the same, but the code is cleaner and easier to navigate.
