@@ -410,9 +410,9 @@ class ChatterboxTTSService:
                 "duration": duration
             }
 
-            print(f"Full text processing complete! Final audio duration: {duration:.2f} seconds")
+            print(f"Full text processing complete! Final audio duration: {duration:.2f} seconds")            
             return StreamingResponse(
-                buffer,
+                io.BytesIO(buffer.read()),
                 media_type="audio/wav",
                 headers={
                     "Content-Disposition": "attachment; filename=generated_full_text_speech.wav",
