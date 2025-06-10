@@ -27,7 +27,8 @@ with image.imports():
 @app.cls(
     gpu="a10g", 
     scaledown_window=60 * 60, 
-    enable_memory_snapshot=True
+    enable_memory_snapshot=True,
+    timeout=60 * 60,  # 1 hour timeout for long processing tasks
     )
 @modal.concurrent(
     max_inputs=10
