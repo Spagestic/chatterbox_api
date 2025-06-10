@@ -311,13 +311,16 @@ class ChatterboxTTSService:
             # Chunk the text
             text_chunks = chunker.chunk_text(request.text)
             chunk_info = chunker.get_chunk_info(text_chunks)
-            
             print(f"Split text into {len(text_chunks)} chunks for processing")
             
-            # If only one chunk, process directly
+            # Initialize audio_chunks variable for processing info
+            audio_chunks = []
+              # If only one chunk, process directly
             if len(text_chunks) == 1:
                 wav = self._generate_audio(text_chunks[0], audio_prompt_path)
-                final_audio = wav[0] if isinstance(wav, tuple) else wav            
+                # For single chunk, pass the full wav object to maintain consistency
+                final_audio = wav
+                audio_chunks = [wav]  # For consistent processing info
             else:
                 # Process chunks in parallel
                 import concurrent.futures
@@ -326,10 +329,10 @@ class ChatterboxTTSService:
                 def process_chunk(chunk_text: str):
                     """Process a single chunk."""
                     wav_result = self._generate_audio(chunk_text, audio_prompt_path)
-                    return wav_result[0] if isinstance(wav_result, tuple) else wav_result
+                    # Return the full wav result, not just wav[0]
+                    return wav_result
                 
                 # Use ThreadPoolExecutor for parallel processing
-                audio_chunks = []
                 with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
                     # Submit all chunks for processing
                     future_to_chunk = {
@@ -392,13 +395,12 @@ class ChatterboxTTSService:
                     audio_to_save = processed_tensor
             else:
                 raise ValueError(f"Unexpected audio tensor dimensions: {processed_tensor.ndim}, shape: {processed_tensor.shape}")
-            
             buffer = AudioUtils.save_audio_to_buffer(audio_to_save, self.model.sr)
-            audio_base64 = base64.b64encode(buffer.read()).decode('utf-8')
             duration = audio_to_save.shape[1] / self.model.sr # Use shape[1] for length
-            # --- End of new audio processing logic ---
-
-            # Prepare processing info
+            
+            # Reset buffer position for reading
+            buffer.seek(0)
+            # --- End of new audio processing logic ---            # Prepare processing info
             processing_info = {
                 "total_chunks": len(text_chunks),
                 "processed_chunks": len(audio_chunks),
@@ -408,25 +410,21 @@ class ChatterboxTTSService:
             }
 
             print(f"Full text processing complete! Final audio duration: {duration:.2f} seconds")
-            
             return StreamingResponse(
-                io.BytesIO(buffer.read()),
+                buffer,
                 media_type="audio/wav",
                 headers={
                     "Content-Disposition": "attachment; filename=generated_full_text_speech.wav",
-                    "X-Audio-Duration": str(duration)
+                    "X-Audio-Duration": str(duration),
+                    "X-Chunks-Processed": str(len(audio_chunks)),
+                    "X-Total-Characters": str(len(request.text))
                 }
             )
 
         except HTTPException as http_exc:
-            return FullTextTTSResponse(
-                success=False, 
-                message=str(http_exc.detail),
-                processing_info={"error": "Processing failed"}
-            )
+            print(f"HTTP exception in full text generation: {http_exc.detail}")
+            raise http_exc
         except Exception as e:
-            return FullTextTTSResponse(
-                success=False, 
-                message=f"Full text audio generation failed: {str(e)}",
-                processing_info={"error": str(e)}
-            )
+            error_msg = f"Full text audio generation failed: {str(e)}"
+            print(f"Exception in full text generation: {error_msg}")
+            raise HTTPException(status_code=500, detail=error_msg)

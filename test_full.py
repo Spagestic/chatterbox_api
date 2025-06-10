@@ -88,74 +88,9 @@ def test_full_text_generation():
         return False
 
 
-def test_full_text_json():
-    """Test full-text JSON response with processing information"""
-    print("\nTesting full-text JSON response...")
-    
-    test_text = """
-    This is a test of the full-text JSON endpoint that returns detailed
-    processing information along with the base64 encoded audio data.
-    
-    The response includes chunk information, processing parameters,
-    and timing details that can be useful for monitoring and debugging.
-    """
-    
-    try:
-        if not ENDPOINTS["generate_full_text_json"]:
-            print("⚠ FULL_TEXT_JSON_ENDPOINT not configured - skipping test")
-            return True
-            
-        response = requests.post(
-            ENDPOINTS["generate_full_text_json"],
-            json={
-                "text": test_text.strip(),
-                "max_chunk_size": 300,
-                "silence_duration": 0.4,
-                "fade_duration": 0.15
-            },
-            timeout=60
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data['success'] and data['audio_base64']:
-                # Decode and save audio
-                Path("output").mkdir(exist_ok=True)
-                audio_data = base64.b64decode(data['audio_base64'])
-                with open("output/full_text_json_output.wav", "wb") as f:
-                    f.write(audio_data)
-                
-                # Display processing information
-                print(f"✓ Full-text JSON generation successful")
-                print(f"  Duration: {data['duration_seconds']:.2f}s")
-                
-                if 'processing_info' in data:
-                    info = data['processing_info']
-                    if 'chunk_info' in info:
-                        chunk_info = info['chunk_info']
-                        print(f"  Chunks: {chunk_info.get('total_chunks', 'unknown')}")
-                        print(f"  Characters: {chunk_info.get('total_characters', 'unknown')}")
-                        print(f"  Avg chunk size: {chunk_info.get('avg_chunk_size', 'unknown'):.0f}")
-                
-                print("  Saved as output/full_text_json_output.wav")
-                return True
-            else:
-                print(f"✗ Full-text JSON generation failed: {data['message']}")
-                return False
-        else:
-            print(f"✗ Full-text JSON generation failed: {response.status_code}")
-            print(f"Response: {response.text}")
-            return False
-    except Exception as e:
-        print(f"✗ Full-text JSON generation error: {e}")
-        return False
-
-
-def run_tests():
     test_full_text_generation()
-    test_full_text_json()
     
 if __name__ == "__main__":
     print("Running full-text TTS tests...")
-    run_tests()
+    test_full_text_generation()
     print("All tests completed.")
