@@ -4,6 +4,7 @@ Main TTS service class with all API endpoints.
 
 import io
 import base64
+import warnings
 from typing import Optional
 
 import modal
@@ -16,6 +17,8 @@ from .audio_utils import AudioUtils
 
 with image.imports():
     from chatterbox.tts import ChatterboxTTS
+    # Suppress specific transformers deprecation warnings
+    warnings.filterwarnings("ignore", message=".*past_key_values.*", category=FutureWarning)
 
 
 @app.cls(gpu="a10g", scaledown_window=60 * 5, enable_memory_snapshot=True)
@@ -32,6 +35,11 @@ class ChatterboxTTSService:
     def load(self):
         """Load the Chatterbox TTS model on container startup."""
         print("Loading Chatterbox TTS model...")
+        
+        # Suppress transformers deprecation warnings
+        warnings.filterwarnings("ignore", message=".*past_key_values.*", category=FutureWarning)
+        warnings.filterwarnings("ignore", message=".*tuple of tuples.*", category=FutureWarning)
+        
         self.model = ChatterboxTTS.from_pretrained(device="cuda")
         print(f"Model loaded successfully! Sample rate: {self.model.sr}")
 
