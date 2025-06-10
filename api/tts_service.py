@@ -14,7 +14,8 @@ from fastapi import HTTPException, File, UploadFile, Form
 from .config import app, image
 from .models import TTSRequest, TTSResponse, HealthResponse, FullTextTTSRequest, FullTextTTSResponse
 from .audio_utils import AudioUtils
-from .text_processing import TextChunker, AudioConcatenator
+from .text_processing import TextChunker
+from .audio_concatenator import AudioConcatenator
 
 with image.imports():
     from chatterbox.tts import ChatterboxTTS
