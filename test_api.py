@@ -21,8 +21,8 @@ ENDPOINTS = {
     "generate_json": os.getenv("GENERATE_JSON_ENDPOINT"),
     "generate_with_file": os.getenv("GENERATE_WITH_FILE_ENDPOINT"),
     "generate": os.getenv("GENERATE_ENDPOINT"),
-    "generate_full_text_audio": os.getenv("FULL_TEXT_TTS_ENDPOINT"),
-    "generate_full_text_json": os.getenv("FULL_TEXT_JSON_ENDPOINT")
+    "generate_full_text_audio": os.getenv("GENERATE_FULL_TEXT_AUDIO_ENDPOINT"),
+    "generate_full_text_json": os.getenv("GENERATE_FULL_TEXT_JSON_ENDPOINT")
 }
 
 def test_health_check():
