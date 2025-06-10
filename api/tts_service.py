@@ -26,7 +26,7 @@ with image.imports():
 
 @app.cls(
     gpu="a10g", 
-    scaledown_window=60 * 5, 
+    scaledown_window=60 * 60, 
     enable_memory_snapshot=True
     )
 @modal.concurrent(
